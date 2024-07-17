@@ -4,5 +4,5 @@ metadata:
   name: my-component
 spec:
   type: service
-  owner: team-a
+  owner: development/guest
   lifecycle: production

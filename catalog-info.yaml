@@ -1,102 +1,111 @@
 # Define the API version and kind of resource
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
-
-# Template metadata
+# Template metadata. Here's your intro to what this template does.
 metadata:
-  name: azure-storage
-  title: Azure Storage Account
-  description: Deploy an Azure Storage Account using Terraform
-
-# Specification for how the template behaves
+  name: eks-cluster
+  title: Node.js App on AWS EKS Cluster
+  description: Deploy a Node.js App on AWS EKS Cluster using Terraform
+# The specification for how the template behaves
 spec:
-  # Owner of the template
+  # Who owns this template. Generally, it could be a team or individual
   owner: user:guest
-  
-  # Type of service this template deploys
-  type: infrastructure
-  
-  # User-input parameters for template customization
+  # The type of service this template deploys
+  type: service
+  # User-input parameters. Makes your templates dynamic!
   parameters:
-    - title: Fill in some details
+    # Ask the user to input some basic app details
+    - title: Fill in some steps
       required:
-        - accountName
-        - resourceGroupName
-        - location
-        - sku
+        - name
       properties:
-        accountName:
-          title: Storage Account Name
+        name:
+          title: App Name
           type: string
-          description: Unique name for your Azure Storage Account
-          ui:autofocus: true  # Auto-focus this field in UI
-        resourceGroupName:
-          title: Resource Group Name
+          description: Unique name for your app
+          ui:autofocus: true  # This field gets auto-focused in UI
+          ui:options:
+            rows: 5  # Number of rows in the input area
+    # Ask the user where they want to store the code
+    - title: Choose a Repo location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
           type: string
-          description: Name of the Azure Resource Group
-        location:
-          title: Location
+          ui:field: RepoUrlPicker  # A special UI component for selecting repo URLs
+          ui:options:
+            allowedHosts:
+              - github.com  # Allowed hosts for repository
+    # Parameters for setting up the EKS cluster
+    - title: Basic EKS Cluster Configuration
+      required:
+        - clusterName
+        - region
+        - action
+      properties:
+        clusterName:
+          title: Cluster Name
           type: string
-          description: Azure region where the Storage Account will be deployed
+          description: The name of your EKS cluster
+          ui:autofocus: true
+        region:
+          title: AWS Region
+          type: string
+          description: The AWS region where the cluster will be deployed
           enum:
-            - eastus
-            - westus
-            - centralus
-            # Add more Azure regions as needed
-        sku:
-          title: SKU
+            - us-east-1
+            - us-west-2
+        action:
+          title: Action
           type: string
-          description: Specifies the SKU name for the Storage Account
+          description: Action to perform (apply/destroy)
           enum:
-            - Standard_LRS
-            - Standard_GRS
-            - Standard_RAGRS
-            # Add more SKUs as needed
-
-  # Steps to execute in order
+            - apply
+            - destroy
+  # Steps that the template will execute in order
   steps:
-    - id: terraform-init
-      name: Terraform Init
-      action: terraform:init
+    # Fetch the base template
+    - id: fetch-base
+      name: Fetch Base
+      action: fetch:template
       input:
-        backend:
-          storage_account_name: ${{ parameters.accountName }}
-          resource_group_name: ${{ parameters.resourceGroupName }}
-          location: ${{ parameters.location }}
-          sku: ${{ parameters.sku }}
-
-    - id: terraform-plan
-      name: Terraform Plan
-      action: terraform:plan
+        url: ./content  # Where the base content is stored
+        values:
+          name: ${{ parameters.name }}
+    # Publish the code to a GitHub repo
+    - id: publish
+      name: Publish
+      action: publish:github
       input:
-        workingDirectory: ./terraform/storage-account
-        variables:
-          account_name: ${{ parameters.accountName }}
-          resource_group_name: ${{ parameters.resourceGroupName }}
-          location: ${{ parameters.location }}
-          sku: ${{ parameters.sku }}
-
-    - id: terraform-apply
-      name: Terraform Apply
-      action: terraform:apply
+        allowedHosts: ['github.com']
+        description: This is ${{ parameters.name }}
+        repoUrl: ${{ parameters.repoUrl }}
+    # Trigger a GitHub Action to set up the EKS cluster
+    - id: github-action
+      name: Trigger GitHub Action
+      action: github:actions:dispatch
       input:
-        workingDirectory: ./terraform/storage-account
-        variables:
-          account_name: ${{ parameters.accountName }}
-          resource_group_name: ${{ parameters.resourceGroupName }}
-          location: ${{ parameters.location }}
-          sku: ${{ parameters.sku }}
-
+        workflowId: manage-eks-cluster.yml  # GitHub Action workflow ID
+        repoUrl: 'github.com?repo=aws-eks&amp;owner=samgabrail'
+        branchOrTagName: 'main'  # The branch to run this action on
+        workflowInputs:
+          clusterName: ${{ parameters.clusterName }}
+          awsRegion: ${{ parameters.region }}
+          action: ${{ parameters.action }}
+    # Register the new component in the Backstage catalog
     - id: register
       name: Register
       action: catalog:register
       input:
-        repoContentsUrl: 'https://github.com/Darcy-dev/backstage/catalog-info.yaml'
-        catalogInfoPath: '/catalog-info.yaml'  # Catalog info location
-
-  # Output links for user after template execution
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'  # Where the catalog info is stored
+  # Output links to the user after the template execution
   output:
     links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
       - title: Open in catalog
         icon: catalog
         entityRef: ${{ steps['register'].output.entityRef }}

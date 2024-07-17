@@ -8,7 +8,7 @@ metadata:
     - azure
 spec:
   type: infrastructure
-  owner: devteam
+  owner: guests
   lifecycle: experimental
   providesApis:
     - https://registry.terraform.io/modules/Azure/network/azurerm

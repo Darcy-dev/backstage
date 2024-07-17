@@ -1,8 +1,19 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: my-component
+  name: azure-infrastructure
+  description: Terraform configuration for Azure VNet and Storage Account
+  tags:
+    - terraform
+    - azure
 spec:
-  type: service
-  owner: guests
-  lifecycle: production
+  type: infrastructure
+  owner: devteam
+  lifecycle: experimental
+  providesApis:
+    - https://registry.terraform.io/modules/Azure/network/azurerm
+  links:
+    - url: https://github.com/your-org/your-repo/main.tf
+      title: Terraform Configuration (main.tf)
+    - url: https://github.com/your-org/your-repo/catalog-info.yaml
+      title: Backstage Catalog Info

@@ -1,5 +1,5 @@
-apiVersion: scaffolder.backstage.io/v1beta3
-kind: Template
+apiVersion: backstage.io/v1alpha1
+kind: Component
 metadata:
   name: azure-infrastructure
   description: Terraform configuration for Azure VNet and Storage Account
@@ -11,7 +11,7 @@ spec:
   owner: guests
   lifecycle: experimental
   providesApis:
-    - https://registry.terraform.io/modules/Azure/network/azurerm
+    - terraform:azure/network/azurerm
   links:
     - url: https://github.com/Darcy-dev/backstage/main.tf
       title: Terraform Configuration (main.tf)

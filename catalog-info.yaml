@@ -13,7 +13,7 @@ spec:
   providesApis:
     - https://registry.terraform.io/modules/Azure/network/azurerm
   links:
-    - url: https://github.com/your-org/your-repo/main.tf
+    - url: https://github.com/Darcy-dev/backstage/main.tf
       title: Terraform Configuration (main.tf)
-    - url: https://github.com/your-org/your-repo/catalog-info.yaml
+    - url: https://github.com/Darcy-dev/backstage/catalog-info.yaml
       title: Backstage Catalog Info

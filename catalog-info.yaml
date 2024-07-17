@@ -11,7 +11,7 @@ spec:
   owner: guests
   lifecycle: experimental
   providesApis:
-    - terraform:azure/network/azurerm
+    - terraform:azure:network/azurerm
   links:
     - url: https://github.com/Darcy-dev/backstage/main.tf
       title: Terraform Configuration (main.tf)

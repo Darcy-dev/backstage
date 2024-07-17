@@ -1,19 +1,102 @@
-apiVersion: backstage.io/v1alpha1
-kind: Component
+# Define the API version and kind of resource
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+
+# Template metadata
 metadata:
-  name: azure-infrastructure
-  description: Terraform configuration for Azure VNet and Storage Account
-  tags:
-    - terraform
-    - azure
+  name: azure-storage
+  title: Azure Storage Account
+  description: Deploy an Azure Storage Account using Terraform
+
+# Specification for how the template behaves
 spec:
+  # Owner of the template
+  owner: user:guest
+  
+  # Type of service this template deploys
   type: infrastructure
-  owner: guests
-  lifecycle: experimental
-  providesApis:
-    - terraform:azure:network/azurerm
-  links:
-    - url: https://github.com/Darcy-dev/backstage/main.tf
-      title: Terraform Configuration (main.tf)
-    - url: https://github.com/Darcy-dev/backstage/catalog-info.yaml
-      title: Backstage Catalog Info
+  
+  # User-input parameters for template customization
+  parameters:
+    - title: Fill in some details
+      required:
+        - accountName
+        - resourceGroupName
+        - location
+        - sku
+      properties:
+        accountName:
+          title: Storage Account Name
+          type: string
+          description: Unique name for your Azure Storage Account
+          ui:autofocus: true  # Auto-focus this field in UI
+        resourceGroupName:
+          title: Resource Group Name
+          type: string
+          description: Name of the Azure Resource Group
+        location:
+          title: Location
+          type: string
+          description: Azure region where the Storage Account will be deployed
+          enum:
+            - eastus
+            - westus
+            - centralus
+            # Add more Azure regions as needed
+        sku:
+          title: SKU
+          type: string
+          description: Specifies the SKU name for the Storage Account
+          enum:
+            - Standard_LRS
+            - Standard_GRS
+            - Standard_RAGRS
+            # Add more SKUs as needed
+
+  # Steps to execute in order
+  steps:
+    - id: terraform-init
+      name: Terraform Init
+      action: terraform:init
+      input:
+        backend:
+          storage_account_name: ${{ parameters.accountName }}
+          resource_group_name: ${{ parameters.resourceGroupName }}
+          location: ${{ parameters.location }}
+          sku: ${{ parameters.sku }}
+
+    - id: terraform-plan
+      name: Terraform Plan
+      action: terraform:plan
+      input:
+        workingDirectory: ./terraform/storage-account
+        variables:
+          account_name: ${{ parameters.accountName }}
+          resource_group_name: ${{ parameters.resourceGroupName }}
+          location: ${{ parameters.location }}
+          sku: ${{ parameters.sku }}
+
+    - id: terraform-apply
+      name: Terraform Apply
+      action: terraform:apply
+      input:
+        workingDirectory: ./terraform/storage-account
+        variables:
+          account_name: ${{ parameters.accountName }}
+          resource_group_name: ${{ parameters.resourceGroupName }}
+          location: ${{ parameters.location }}
+          sku: ${{ parameters.sku }}
+
+    - id: register
+      name: Register
+      action: catalog:register
+      input:
+        repoContentsUrl: 'https://github.com/Darcy-dev/backstage/catalog-info.yaml'
+        catalogInfoPath: '/catalog-info.yaml'  # Catalog info location
+
+  # Output links for user after template execution
+  output:
+    links:
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}
